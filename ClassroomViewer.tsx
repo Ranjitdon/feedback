@@ -186,13 +186,17 @@ export default function ClassroomViewer() {
   
         const response = await axios.post(
           "http://127.0.0.1:5001/extract-text",
-          { drive_link: driveLink },
+          { 
+            drive_link: driveLink, 
+            topic: assignment.title // Ensure this matches the backend expectation
+          },
           {
             headers: {
               "Content-Type": "application/json",
             },
           }
         );
+        
   
         console.log("Text extraction completed successfully:", response.data);
   
@@ -203,15 +207,18 @@ export default function ClassroomViewer() {
         }
   
         // Navigate to feedback page with extracted text
-        navigator("/feedback", {
-          state: {
-            assignment: {
-              title: assignment.title,
-              description: assignment.description,
-            },
-            extractedText: response.data.text,
-          },
-        });
+        console.log("Full Response:", response.data);
+console.log("Extracted Text:", response.data.extracted_text);
+console.log("Feedback:", response.data.feedback);
+
+navigator("/feedback", {
+  state: {
+    title: assignment.title,
+    content: response.data.extracted_text,
+    ai_generated: response.data.ai_generated_text, // Send extracted text
+    feedback: response.data.feedback, // Send feedback
+  },
+});
       } catch (error) {
         console.error("Error extracting text from document:", error);
         setProcessingAssignment(null);
