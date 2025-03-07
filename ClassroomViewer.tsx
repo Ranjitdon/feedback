@@ -13,6 +13,7 @@ import {
   ExternalLink,
   BookOpen,
   Loader2,
+  Upload,
 } from "lucide-react";
 import axios from "axios";
 import Navbar from "../Navbar";
@@ -149,6 +150,51 @@ export default function ClassroomViewer() {
     </motion.div>
   );
 
+
+
+  
+
+  const handleOMRUpload = async (assignment: Assignment) => {
+    console.log("Getting OMR answers for:", assignment.title);
+  
+    const submission = assignment.submissions.find(
+      (sub) => sub.assignmentSubmission?.attachments?.length
+    );
+
+    if (!submission || !submission.assignmentSubmission || !submission.assignmentSubmission.attachments) {
+      console.error("No valid submission or attachments found");
+      return;
+    }
+    const attachment = submission.assignmentSubmission.attachments[0];
+    try {
+      if (!attachment.driveFile) {
+        console.error("No drive file found in attachment");
+        return;
+      }
+  
+      // Construct the Google Drive link from file ID
+      const driveLink = `https://drive.google.com/file/d/${attachment.driveFile.id}/view`;
+  
+      console.log("Sending image for OMR processing...");
+  
+      const response = await axios.post(
+        "http://127.0.0.1:5002/omr-extract",
+        {
+          drive_link: driveLink, // Sending the Google Drive link
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+  
+      console.log("OMR Processing Completed:", response.data);
+    } catch (error) {
+      console.error("Error processing OMR:", error);
+    }
+  };
+  
   // Updated handleFeedback function that calls your AI model directly
   const handleFeedback = async (assignment: Assignment) => {
     console.log("Getting feedback for assignment:", assignment.title);
@@ -207,9 +253,9 @@ export default function ClassroomViewer() {
         }
   
         // Navigate to feedback page with extracted text
-        console.log("Full Response:", response.data);
-console.log("Extracted Text:", response.data.extracted_text);
-console.log("Feedback:", response.data.feedback);
+//         console.log("Full Response:", response.data);
+// console.log("Extracted Text:", response.data.extracted_text);
+// console.log("Feedback:", response.data.feedback);
 
 navigator("/feedback", {
   state: {
@@ -241,10 +287,10 @@ navigator("/feedback", {
             transition={{ duration: 0.5 }}
             className="mb-8"
           >
-            <h1 className="text-4xl font-bold mb-2 text-gray-800">
+            <h1 className="text-4xl font-bold mb-3 bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
               Classroom Assignments
             </h1>
-            <p className="text-gray-600">
+            <p className="text-gray-1000 ">
               Manage and track your classroom assignments
             </p>
           </motion.div>
@@ -307,7 +353,7 @@ navigator("/feedback", {
                     </button>
                   </div>
 
-                  {assignment.materials && assignment.materials.length > 0 && (
+                  {/* {assignment.materials && assignment.materials.length > 0 && (
                     <div className="mb-4 p-4 bg-gray-50 rounded-lg">
                       <h4 className="font-semibold text-gray-700 mb-3">
                         Materials:
@@ -345,7 +391,7 @@ navigator("/feedback", {
                           )
                       )}
                     </div>
-                  )}
+                  )} */}
 
                   {assignment.submissions?.length > 0 && (
                     <div className="space-y-3 flex-1">
@@ -406,27 +452,36 @@ navigator("/feedback", {
                     </div>
                   )}
 
-                  <button
-                    className={`mt-4 w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white py-2 px-4 rounded-lg flex items-center justify-center space-x-2 hover:opacity-90 transition-opacity ${
-                      processingAssignment === assignment.id
-                        ? "opacity-75 cursor-not-allowed"
-                        : ""
-                    }`}
-                    onClick={() => handleFeedback(assignment)}
-                    disabled={processingAssignment === assignment.id}
-                  >
-                    {processingAssignment === assignment.id ? (
-                      <>
-                        <Loader2 className="h-5 w-5 animate-spin" />
-                        <span>Processing...</span>
-                      </>
-                    ) : (
-                      <>
-                        <MessageCircle className="h-5 w-5" />
-                        <span>Get Feedback</span>
-                      </>
-                    )}
-                  </button>
+<button
+  className={`mt-4 w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white py-2 px-4 rounded-lg flex items-center justify-center space-x-2 hover:opacity-90 transition-opacity ${
+    processingAssignment === assignment.id ? "opacity-75 cursor-not-allowed" : ""
+  }`}
+  onClick={() =>
+    assignment.title.startsWith("OMR")
+      ? handleOMRUpload(assignment)
+      : handleFeedback(assignment)
+  }
+  disabled={processingAssignment === assignment.id}
+>
+  {processingAssignment === assignment.id ? (
+    <>
+      <Loader2 className="h-5 w-5 animate-spin" />
+      <span>Processing...</span>
+    </>
+  ) : assignment.title.startsWith("OMR") ? (
+    <>
+      <Upload className="h-5 w-5" />
+      <span>Submit</span>
+    </>
+  ) : (
+    <>
+      <MessageCircle className="h-5 w-5" />
+      <span>Get Feedback</span>
+    </>
+  )}
+</button>
+
+
                 </Card>
               </motion.div>
             ))}
