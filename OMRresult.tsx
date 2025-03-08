@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from "react";
 import {
   Table,
   TableBody,
@@ -9,39 +9,68 @@ import {
 } from "../components/ui/table";
 import { Card } from "../components/ui/card";
 import { motion } from "framer-motion";
-import { Mail, Users, Award, CheckCircle2, XCircle, Trophy, ChevronDown, ChevronUp, Edit2, Save, Plus, Minus } from 'lucide-react';
-import Navbar from '../components/Navbar';
+import {
+  Mail,
+  Users,
+  Award,
+  CheckCircle2,
+  XCircle,
+  Trophy,
+  ChevronDown,
+  ChevronUp,
+  Edit2,
+  Save,
+  Plus,
+  Minus,
+} from "lucide-react";
+import Navbar from "../components/Navbar";
 
 // Dummy data
 const initialMockData = {
   students: [
     {
-      id: "1",
-      name: "John Doe",
-      score: 85,   
-      answers: ["A", "B", "C", "D", "A", "B", "C", "D", "A", "B", "C", "D", "A", "B", "C"],
+      "id": "103499930756033526221",
+      "name": "Still Alive",
+      "score": 85,
+      "answers": [
+        "A", "D", "C", "D", "A", null, "B", "D", "A", "D",
+        "B", null, "C", "A", "A", null, "B", "A", "D", "A",
+        "A", "A", "D", "B", "D", "A", "D", "A", "C", "D"
+      ]
     },
     {
-      id: "2",
-      name: "Jane Smith",
-      score: 75,
-      answers: ["A", "B", "C", "D", "B", "B", "C", "A", "A", "B", "A", "B", "C", "D", "A"],
+      "id": "2",
+      "name": "Jane Smith",
+      "score": 75,
+      "answers": [
+        "A", "B", "C", "D", "B", "B", "C", "A", "A", "B",
+        "A", "B", "C", "D", "A", "D", "C", "A", "B", "C",
+        "D", "A", "C", "B", "D", "C", "A", "B", "A", "D"
+      ]
     },
     {
-      id: "3",
-      name: "Bob Johnson",
-      score: 55,
-      answers: ["B", "B", "C", "D", "A", "A", "C", "D", "B", "B", "B", "C", "D", "A", "A"],
-    },
+      "id": "3",
+      "name": "Bob Johnson",
+      "score": 55,
+      "answers": [
+        "B", "B", "C", "D", "A", "A", "C", "D", "B", "B",
+        "B", "C", "D", "A", "A", "B", "C", "D", "A", "A",
+        "C", "B", "D", "B", "A", "D", "C", "A", "B", "C"
+      ]
+    }
   ],
   answerKey: {
-    answers: ["A", "B", "C", "D", "A", "B", "C", "D", "A", "B", "C", "D", "A", "B", "C"],
-    totalQuestions: 15,
+    answers: [
+      "A", "B", "C", "D", "A", "B", "C", "D", "A", "B",
+      "C", "D", "A", "B", "C", "D", "A", "B", "C", "D",
+      "A", "B", "C", "D", "A", "B", "C", "D", "A", "B"
+    ],
+    totalQuestions: 30,
   },
 };
 
 const INITIAL_ANSWERS_SHOWN = 10;
-const ANSWER_OPTIONS = ["A", "B", "C", "D"];
+const ANSWER_OPTIONS = ["A", "B", "C", "D","E","null"];
 const MIN_QUESTIONS = 5;
 const MAX_QUESTIONS = 50;
 
@@ -51,8 +80,10 @@ export default function OMRResults() {
   const [sending, setSending] = useState(false);
   const [showAllAnswers, setShowAllAnswers] = useState(false);
   const [editingAnswerKey, setEditingAnswerKey] = useState(false);
-  const [tempAnswerKey, setTempAnswerKey] = useState([...data.answerKey.answers]);
-  
+  const [tempAnswerKey, setTempAnswerKey] = useState([
+    ...data.answerKey.answers,
+  ]);
+
   // Calculate scores based on current answer key
   const calculateScore = (studentAnswers: string[], answerKey: string[]) => {
     const correctAnswers = studentAnswers.reduce((acc, answer, index) => {
@@ -63,30 +94,34 @@ export default function OMRResults() {
 
   // Sort students by score to determine ranks
   const students = [...data.students]
-    .map(student => ({
+    .map((student) => ({
       ...student,
-      score: calculateScore(student.answers, data.answerKey.answers)
+      score: calculateScore(student.answers.filter((answer): answer is string => answer !== null), data.answerKey.answers),
     }))
     .sort((a, b) => b.score - a.score);
 
   const sendResultsByEmail = async () => {
     try {
       setSending(true);
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      await new Promise((resolve) => setTimeout(resolve, 1500));
       setEmailSent(true);
     } catch (error) {
-      console.error('Failed to send email:', error);
+      console.error("Failed to send email:", error);
     } finally {
       setSending(false);
     }
   };
 
   const getRankColor = (rank: number) => {
-    switch(rank) {
-      case 1: return 'text-yellow-600';
-      case 2: return 'text-gray-600';
-      case 3: return 'text-amber-700';
-      default: return 'text-blue-600';
+    switch (rank) {
+      case 1:
+        return "text-yellow-600";
+      case 2:
+        return "text-gray-600";
+      case 3:
+        return "text-amber-700";
+      default:
+        return "text-blue-600";
     }
   };
 
@@ -104,18 +139,18 @@ export default function OMRResults() {
   };
 
   const saveAnswerKey = () => {
-    setData(prev => ({
+    setData((prev) => ({
       ...prev,
       answerKey: {
         ...prev.answerKey,
-        answers: tempAnswerKey
-      }
+        answers: tempAnswerKey,
+      },
     }));
     setEditingAnswerKey(false);
   };
 
   const adjustQuestionCount = (increment: boolean) => {
-    const newCount = increment 
+    const newCount = increment
       ? Math.min(data.answerKey.totalQuestions + 1, MAX_QUESTIONS)
       : Math.max(data.answerKey.totalQuestions - 1, MIN_QUESTIONS);
 
@@ -123,18 +158,18 @@ export default function OMRResults() {
       ? [...data.answerKey.answers, ANSWER_OPTIONS[0]]
       : data.answerKey.answers.slice(0, -1);
 
-    setData(prev => ({
+    setData((prev) => ({
       ...prev,
       answerKey: {
         answers: newAnswers,
-        totalQuestions: newCount
+        totalQuestions: newCount,
       },
-      students: prev.students.map(student => ({
+      students: prev.students.map((student) => ({
         ...student,
         answers: increment
           ? [...student.answers, ANSWER_OPTIONS[0]]
-          : student.answers.slice(0, -1)
-      }))
+          : student.answers.slice(0, -1),
+      })),
     }));
     setTempAnswerKey(newAnswers);
   };
@@ -143,8 +178,8 @@ export default function OMRResults() {
     setShowAllAnswers(!showAllAnswers);
   };
 
-  const visibleAnswers = showAllAnswers 
-    ? data.answerKey.answers 
+  const visibleAnswers = showAllAnswers
+    ? data.answerKey.answers
     : data.answerKey.answers.slice(0, INITIAL_ANSWERS_SHOWN);
 
   return (
@@ -165,19 +200,19 @@ export default function OMRResults() {
               disabled={sending || emailSent}
               className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-200 ${
                 emailSent
-                  ? 'bg-green-500 text-white cursor-not-allowed'
+                  ? "bg-green-500 text-white cursor-not-allowed"
                   : sending
-                  ? 'bg-gray-400 text-white cursor-not-allowed'
-                  : 'bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:opacity-90'
+                  ? "bg-gray-400 text-white cursor-not-allowed"
+                  : "bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:opacity-90"
               }`}
             >
               <Mail className="h-5 w-5" />
               <span>
                 {emailSent
-                  ? 'Results Sent!'
+                  ? "Results Sent!"
                   : sending
-                  ? 'Sending...'
-                  : 'Email Results'}
+                  ? "Sending..."
+                  : "Email Results"}
               </span>
             </button>
           </div>
@@ -199,7 +234,13 @@ export default function OMRResults() {
                 <div>
                   <p className="text-sm text-gray-500">Average Score</p>
                   <p className="text-2xl font-bold">
-                    {(students.reduce((acc, student) => acc + student.score, 0) / students.length).toFixed(2)}%
+                    {(
+                      students.reduce(
+                        (acc, student) => acc + student.score,
+                        0
+                      ) / students.length
+                    ).toFixed(2)}
+                    %
                   </p>
                 </div>
               </div>
@@ -211,7 +252,9 @@ export default function OMRResults() {
                   <CheckCircle2 className="h-8 w-8 text-green-600" />
                   <div>
                     <p className="text-sm text-gray-500">Total Questions</p>
-                    <p className="text-2xl font-bold">{data.answerKey.totalQuestions}</p>
+                    <p className="text-2xl font-bold">
+                      {data.answerKey.totalQuestions}
+                    </p>
                   </div>
                 </div>
                 <div className="flex space-x-2">
@@ -243,7 +286,7 @@ export default function OMRResults() {
                     onClick={toggleAnswersView}
                     className="flex items-center space-x-1 text-purple-600 hover:text-purple-700 transition-colors"
                   >
-                    <span>{showAllAnswers ? 'Show Less' : 'Show All'}</span>
+                    <span>{showAllAnswers ? "Show Less" : "Show All"}</span>
                     {showAllAnswers ? (
                       <ChevronUp className="h-4 w-4" />
                     ) : (
@@ -283,11 +326,15 @@ export default function OMRResults() {
                   {editingAnswerKey ? (
                     <select
                       value={tempAnswerKey[index]}
-                      onChange={(e) => handleAnswerKeyChange(index, e.target.value)}
+                      onChange={(e) =>
+                        handleAnswerKeyChange(index, e.target.value)
+                      }
                       className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
                     >
-                      {ANSWER_OPTIONS.map(option => (
-                        <option key={option} value={option}>{option}</option>
+                      {ANSWER_OPTIONS.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
                       ))}
                     </select>
                   ) : (
@@ -315,37 +362,45 @@ export default function OMRResults() {
                     <TableCell>
                       <div className="flex items-center">
                         {getRankIcon(index + 1)}
-                        <span className={`font-bold ${getRankColor(index + 1)}`}>
+                        <span
+                          className={`font-bold ${getRankColor(index + 1)}`}
+                        >
                           #{index + 1}
                         </span>
                       </div>
                     </TableCell>
-                    <TableCell className="font-medium">{student.name}</TableCell>
+                    <TableCell className="font-medium">
+                      {student.name}
+                    </TableCell>
                     <TableCell>
                       <span className="font-bold">{student.score}%</span>
                     </TableCell>
                     <TableCell>
                       <div className="flex space-x-1">
-                        {(showAllAnswers ? student.answers : student.answers.slice(0, INITIAL_ANSWERS_SHOWN)).map((answer, index) => (
+                        {(showAllAnswers
+                          ? student.answers
+                          : student.answers.slice(0, INITIAL_ANSWERS_SHOWN)
+                        ).map((answer, index) => (
                           <div
                             key={index}
                             className={`w-6 h-6 flex items-center justify-center rounded-full text-xs font-medium ${
                               answer === data.answerKey.answers[index]
-                                ? 'bg-green-100 text-green-800'
-                                : 'bg-red-100 text-red-800'
+                                ? "bg-green-100 text-green-800"
+                                : "bg-red-100 text-red-800"
                             }`}
                           >
                             {answer}
                           </div>
                         ))}
-                        {!showAllAnswers && student.answers.length > INITIAL_ANSWERS_SHOWN && (
-                          <button
-                            onClick={toggleAnswersView}
-                            className="w-6 h-6 flex items-center justify-center rounded-full bg-gray-100 text-gray-600 text-xs font-medium hover:bg-gray-200 transition-colors"
-                          >
-                            +{student.answers.length - INITIAL_ANSWERS_SHOWN}
-                          </button>
-                        )}
+                        {!showAllAnswers &&
+                          student.answers.length > INITIAL_ANSWERS_SHOWN && (
+                            <button
+                              onClick={toggleAnswersView}
+                              className="w-6 h-6 flex items-center justify-center rounded-full bg-gray-100 text-gray-600 text-xs font-medium hover:bg-gray-200 transition-colors"
+                            >
+                              +{student.answers.length - INITIAL_ANSWERS_SHOWN}
+                            </button>
+                          )}
                       </div>
                     </TableCell>
                     <TableCell>
