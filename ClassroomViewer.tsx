@@ -152,11 +152,11 @@ export default function ClassroomViewer() {
 
 
 
-  
+
 
   const handleOMRUpload = async (assignment: Assignment) => {
     console.log("Getting OMR answers for:", assignment.title);
-  
+
     const submission = assignment.submissions.find(
       (sub) => sub.assignmentSubmission?.attachments?.length
     );
@@ -171,12 +171,12 @@ export default function ClassroomViewer() {
         console.error("No drive file found in attachment");
         return;
       }
-  
+      console.log(`${attachment.driveFile.id}`)
       // Construct the Google Drive link from file ID
       const driveLink = `https://drive.google.com/file/d/${attachment.driveFile.id}/view`;
-  
+
       console.log("Sending image for OMR processing...");
-  
+
       const response = await axios.post(
         "http://127.0.0.1:5002/omr-extract",
         {
@@ -188,32 +188,52 @@ export default function ClassroomViewer() {
           },
         }
       );
-  
+
       console.log("OMR Processing Completed:", response.data);
+      const formattedData = JSON.stringify(response.data.omr_results);
+
+      const finalResponse = await axios.post(
+        `${import.meta.env.VITE_NODE_BACKEND}/omr/omr-results`,
+        {
+          omr_results: formattedData,
+          success: true,
+          username: localStorage.getItem("userName"), // Replace with actual username
+          userid: localStorage.getItem("userId"), // Replace with actual user ID
+          assignment_id: assignment.id,
+          assignment_topic: assignment.title,
+          timestamp: new Date().toISOString(),
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      console.log("Final Response:", finalResponse);
     } catch (error) {
       console.error("Error processing OMR:", error);
     }
   };
-  
+
   // Updated handleFeedback function that calls your AI model directly
   const handleFeedback = async (assignment: Assignment) => {
     console.log("Getting feedback for assignment:", assignment.title);
-  
+
     // Set the current assignment as processing
     setProcessingAssignment(assignment.id);
-  
+
     try {
       // Find the first submission with attachments
       const submission = assignment.submissions.find(
         (sub) => sub.assignmentSubmission?.attachments?.length
       );
-  
+
       if (!submission || !submission.assignmentSubmission?.attachments?.length) {
         console.error("No submission attachments found");
         setProcessingAssignment(null);
         return;
       }
-  
+
       // Get the first attachment
       const attachment = submission.assignmentSubmission.attachments[0];
       if (!attachment.driveFile) {
@@ -221,19 +241,19 @@ export default function ClassroomViewer() {
         setProcessingAssignment(null);
         return;
       }
-  
+
       console.log("Found attachment:", attachment.driveFile.title);
-  
+
       // Construct the Google Drive link from file ID
       const driveLink = `https://drive.google.com/file/d/${attachment.driveFile.id}/view`;
-  
+
       try {
         console.log("Sending document for text extraction...");
-  
+
         const response = await axios.post(
           "http://127.0.0.1:5001/extract-text",
-          { 
-            drive_link: driveLink, 
+          {
+            drive_link: driveLink,
             topic: assignment.title // Ensure this matches the backend expectation
           },
           {
@@ -242,29 +262,29 @@ export default function ClassroomViewer() {
             },
           }
         );
-        
-  
+
+
         console.log("Text extraction completed successfully:", response.data);
-  
+
         if (!response.data.success) {
           console.error("Failed to extract text:", response.data.error);
           setProcessingAssignment(null);
           return;
         }
-  
-        // Navigate to feedback page with extracted text
-//         console.log("Full Response:", response.data);
-// console.log("Extracted Text:", response.data.extracted_text);
-// console.log("Feedback:", response.data.feedback);
 
-navigator("/feedback", {
-  state: {
-    title: assignment.title,
-    content: response.data.extracted_text,
-    ai_generated: response.data.ai_generated_text, // Send extracted text
-    feedback: response.data.feedback, // Send feedback
-  },
-});
+        // Navigate to feedback page with extracted text
+        //         console.log("Full Response:", response.data);
+        // console.log("Extracted Text:", response.data.extracted_text);
+        // console.log("Feedback:", response.data.feedback);
+
+        navigator("/feedback", {
+          state: {
+            title: assignment.title,
+            content: response.data.extracted_text,
+            ai_generated: response.data.ai_generated_text, // Send extracted text
+            feedback: response.data.feedback, // Send feedback
+          },
+        });
       } catch (error) {
         console.error("Error extracting text from document:", error);
         setProcessingAssignment(null);
@@ -274,7 +294,7 @@ navigator("/feedback", {
       setProcessingAssignment(null);
     }
   };
-  
+
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -451,35 +471,57 @@ navigator("/feedback", {
                       ))}
                     </div>
                   )}
+                  {localStorage.getItem("userRole") === "teacher" && (
+  <button
+    onClick={() => {
+      if (assignment.title.startsWith("OMR")) {
+        navigator("/omr");
+      } else {
+        navigator("/teacher-quiz", {
+          state: {
+            title: assignment.title,
+            desc: assignment.description,
+          },
+        });
+      }
+    }}
+    className="mt-0 bg-gradient-to-r from-purple-600 to-blue-600 text-white py-2 px-4 rounded-lg flex items-center justify-center space-x-2 hover:opacity-90 transition-opacity"
+  >
+    <span>{assignment.title.startsWith("OMR") ? "Analyze" : "Generate Quiz"}</span>
+  </button>
+)}
 
-<button
-  className={`mt-4 w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white py-2 px-4 rounded-lg flex items-center justify-center space-x-2 hover:opacity-90 transition-opacity ${
-    processingAssignment === assignment.id ? "opacity-75 cursor-not-allowed" : ""
-  }`}
-  onClick={() =>
-    assignment.title.startsWith("OMR")
-      ? handleOMRUpload(assignment)
-      : handleFeedback(assignment)
-  }
-  disabled={processingAssignment === assignment.id}
->
-  {processingAssignment === assignment.id ? (
-    <>
-      <Loader2 className="h-5 w-5 animate-spin" />
-      <span>Processing...</span>
-    </>
-  ) : assignment.title.startsWith("OMR") ? (
-    <>
-      <Upload className="h-5 w-5" />
-      <span>Submit</span>
-    </>
-  ) : (
-    <>
-      <MessageCircle className="h-5 w-5" />
-      <span>Get Feedback</span>
-    </>
-  )}
-</button>
+                    
+                  {
+                    localStorage.getItem("userRole") === 'student' && <button
+                      className={`mt-4 w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white py-2 px-4 rounded-lg flex items-center justify-center space-x-2 hover:opacity-90 transition-opacity ${processingAssignment === assignment.id ? "opacity-75 cursor-not-allowed" : ""
+                        }`}
+                      onClick={() =>
+                        assignment.title.startsWith("OMR")
+                          ? handleOMRUpload(assignment)
+                          : handleFeedback(assignment)
+                      }
+                      disabled={processingAssignment === assignment.id}
+                    >
+                      {processingAssignment === assignment.id ? (
+                        <>
+                          <Loader2 className="h-5 w-5 animate-spin" />
+                          <span>Processing...</span>
+                        </>
+                      ) : assignment.title.startsWith("OMR") ? (
+                        <>
+                          <Upload className="h-5 w-5" />
+                          <span>Submit</span>
+                        </>
+                      ) : (
+                        <>
+                          <MessageCircle className="h-5 w-5" />
+                          <span>Get Feedback</span>
+                        </>
+                      )}
+                    </button>
+                  }
+
 
 
                 </Card>
